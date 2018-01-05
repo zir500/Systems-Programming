@@ -14,10 +14,14 @@ static void removeFromRunnable(OS_TCB_t *task);
 static void wakeupTasks(void); 
 
 
-/* Task Queues */
+/* Task Queues 
+ * The Tail and Head are arrays which point to the tail/head of a linked list for each priority level.
+ * FIXED_PRIORITY_LOWEST is always the last priority in the enumeration and as such will have the highest value
+ * The value will be = number of items in the enumaration - 1
+*/
 static OS_TCB_t *runnable_tail[FIXED_PRIORITY_LOWEST+1] = {NULL};
 static OS_TCB_t *runnable_head[FIXED_PRIORITY_LOWEST+1] = {NULL};
-static OS_TCB_t *waiting_tasks_head = NULL; // A singly linked list, sorted by wakeup time. TODO: Consider using beap
+static OS_TCB_t *sleeping_tasks_head = NULL; // A singly linked list, sorted by wakeup time. TODO: Consider using beap
 
 
 OS_Scheduler_t const fixedPriorityScheduler = {
@@ -36,7 +40,8 @@ static void init() {
 }
 
 /* 
- * Returns the TCB of the highest priority runnable task
+ * Returns the TCB of the highest priority runnable task or OS_idleTCB_p if 
+ * there is no more tasks which can be run.
  */
 static OS_TCB_t const * scheduler() {
 	wakeupTasks();
@@ -49,6 +54,9 @@ static OS_TCB_t const * scheduler() {
 	return OS_idleTCB_p;
 }
 
+/* Adds a task to the list of runnable tasks 
+ * For adding entirely new tasks to the queue or for putting woken up tasks back into the runnable queues
+*/
 static void addTask(OS_TCB_t * const newTask) {
 	uint32_t taskPriority = newTask->priority;
 	if (runnable_tail[taskPriority] != NULL) {
@@ -58,38 +66,48 @@ static void addTask(OS_TCB_t * const newTask) {
 	} else {
 		runnable_head[taskPriority] = newTask;
 		runnable_tail[taskPriority] = newTask;
-		newTask->prev = runnable_tail[taskPriority];
+		newTask->prev = NULL;
+		newTask->next = NULL;
 	}
 }
 
+/* A callback used to indicate that a particular task has finished */
 static void taskExit(OS_TCB_t *task) {
 	removeFromRunnable(task);
 }
 
+/* Puts the currently running task into a sleeping state, where it will wait for
+ * a given reason code to wake it up again.
+*/
 static void waitCallback(void * const reason, uint32_t const checkCode) {
 	
 }
 
+/* Sends a wakeup signal with a particular reason to sleeping tasks, 
+ * causing matching tasks to wakeup.
+*/
 static void notifyCallback(void * const reason) {
 	
 }
 
 /* Removes the given task from the runnable tasks lists and inserts it into the sleeping tasks list in the appropriate position
-with rehard to its wakeup time.  Sorting into this list is O(n) :( */
+with regard to its wakeup time.  Sorting into this list is O(n) :( */
 static void sleepCallback(OS_TCB_t *task, uint32_t const wakeupTime) {
 	removeFromRunnable(task);
 	
-	OS_TCB_t *prevInList = waiting_tasks_head;
-	OS_TCB_t *listPointer = waiting_tasks_head;
-	while (IS_AFTER(wakeupTime, listPointer->data) && listPointer != NULL) {
-		prevInList = listPointer;
-		listPointer = listPointer->next;
+	OS_TCB_t *prevInList = sleeping_tasks_head;
+	OS_TCB_t *listPointer = sleeping_tasks_head;
+	while (listPointer != NULL) {
+		if (IS_AFTER(wakeupTime, listPointer->data)) {
+			prevInList = listPointer;
+			listPointer = listPointer->next;
+		}
 	}
 	
-	if (waiting_tasks_head != NULL) {
+	if (sleeping_tasks_head != NULL) {
 		prevInList->next = task;
 	} else {
-		waiting_tasks_head = task;
+		sleeping_tasks_head = task;
 	}
 	
 	task->next = listPointer;
@@ -101,28 +119,30 @@ static void sleepCallback(OS_TCB_t *task, uint32_t const wakeupTime) {
 static void wakeupTasks() {
 	// Because the sleeping list is sorted by soonest wakup first, once we reach the first task which isnt ready yet, then we can stop.
 	uint32_t t = OS_elapsedTicks();
-	if (waiting_tasks_head != NULL) {
-		while (IS_AFTER(OS_elapsedTicks(), waiting_tasks_head->data)) {
-			waiting_tasks_head->state &= ~TASK_STATE_SLEEP;
-			addTask(waiting_tasks_head);
+	if (sleeping_tasks_head != NULL) {
+		while (IS_AFTER(OS_elapsedTicks(), sleeping_tasks_head->data)) {
+			sleeping_tasks_head->state &= ~TASK_STATE_SLEEP;
+			addTask(sleeping_tasks_head);
 			
-			waiting_tasks_head = waiting_tasks_head->next; // Move head to the next in the list.
+			sleeping_tasks_head = sleeping_tasks_head->next; // Move head to the next in the list.
 		}
 	}
 }
 
 static void removeFromRunnable(OS_TCB_t *task) {
-	if (task->next != NULL && task->prev != NULL){
+	if (runnable_head[task->priority] == task) {
+		runnable_head[task->priority] = task->next;
+	}
+	
+	if (task->next != NULL) {
 		task->next->prev = task->prev;
+	}
+	
+	if (task->prev != NULL) {
 		task->prev->next = task->next;
-		
-		if (runnable_head[task->priority] == task) {
-			runnable_head[task->priority] = task->next;
-		} 
-		if (runnable_tail[task->priority] == task){
-			runnable_tail[task->priority] = task->prev;
-		}
-	} else {
-		runnable_head[task->priority] = NULL;
+	}
+	
+	if (runnable_tail[task->priority] == task) {
+		runnable_tail[task->priority] = task->prev;
 	}
 }
