@@ -27,7 +27,7 @@ typedef struct s_StackFrame {
 	volatile uint32_t psr;
 } OS_StackFrame_t;
 
-typedef struct OS_TCB{
+typedef struct OS_TCB {
 	/* Task stack pointer.  It's important that this is the first entry in the structure,
 	   so that a simple double-dereference of a TCB pointer yields a stack pointer. */
 	void * volatile sp;
@@ -42,13 +42,35 @@ typedef struct OS_TCB{
 	uint32_t volatile data;
 	
 	/* For scheduling POinter to the next in the queue to be executed and to the previous task in the queue*/
-	struct OS_TCB *next;
+	struct OS_TCB *next; //TODO Volatile Needed?
 	struct OS_TCB *prev;
 } OS_TCB_t;
+
+
+/* Contains the head and tail elements for a linked lisk of TCBs */
+typedef struct {
+	OS_TCB_t *head;
+	OS_TCB_t *tail;
+} OS_TaskList_t;
 
 /* Constants that define bits in a thread's 'state' field. */
 #define TASK_STATE_YIELD    (1UL << 0) 
 #define TASK_STATE_SLEEP	(1UL << 1) // Waiting for the current time to exceed the time specified in the TCB's data field.
 #define TASK_STATE_WAITING	(1UL << 2) // Waiting for a notification matching the code in the TCB's data field.
+
+/*  */
+void OS_initialiseList(OS_TaskList_t * const list);
+
+/* Adds the given TCB to the end of a list */
+void OS_appendToList(OS_TaskList_t * const list, OS_TCB_t * const task);
+
+/* Inserts the given task into a list which is sorted by descending levels or priority 
+ * ie, the tcb at the head has the highest priority
+*/
+void OS_addToListByPriority(OS_TaskList_t * const list, OS_TCB_t * const task); 
+
+/* Removes the given TCB from a list. */
+void OS_removeFromList(OS_TaskList_t * const list, OS_TCB_t * const task);
+
 
 #endif /* _TASK_H_ */
