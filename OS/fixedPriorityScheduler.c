@@ -1,16 +1,17 @@
 #include "fixedPriorityScheduler.h"
+#include "stm32f4xx.h"
 
 /* Scheduling Functions */
 static void init(void);
 static OS_TCB_t const * scheduler(void);
 static void addTask(OS_TCB_t * const tcb);
 static void taskExit(OS_TCB_t * const tcb);
-static void waitCallback(void * const reason, uint32_t const checkCode);
-static void notifyCallback(void * const reason);
+static void waitCallback(OS_TCB_t * const task, uint32_t const checkCode);
+static void notifyCallback(OS_TCB_t * const task);
 static void sleepCallback(OS_TCB_t *task, uint32_t const wakeupTime);
 
 /* Utility functions for this scheduler */
-static void removeFromRunnable(OS_TCB_t *task);
+static void removeFromRunnable(OS_TCB_t * const task);
 static void wakeupTasks(void); 
 
 
@@ -76,23 +77,27 @@ static void taskExit(OS_TCB_t *task) {
 	removeFromRunnable(task);
 }
 
-/* Puts the currently running task into a sleeping state, where it will wait for
- * a given reason code to wake it up again.
+/* Puts the currently running task into a waiting state, where it will not run
+ * until it is notified.
 */
-static void waitCallback(void * const reason, uint32_t const checkCode) {
-	
+static void waitCallback(OS_TCB_t * const task, uint32_t const checkCode) {
+	if (checkCode == OS_checkCode()) {
+		removeFromRunnable(task);
+		SCB->ICSR = SCB_ICSR_PENDSVSET_Msk; // Invoke Scheduler
+	}
 }
 
 /* Sends a wakeup signal with a particular reason to sleeping tasks, 
  * causing matching tasks to wakeup.
 */
-static void notifyCallback(void * const reason) {
-	
+static void notifyCallback(OS_TCB_t * const task) {
+	addTask(task);
+	//printf("Task 0x%0x notified", (int)task);
 }
 
 /* Removes the given task from the runnable tasks lists and inserts it into the sleeping tasks list in the appropriate position
 with regard to its wakeup time.  Sorting into this list is O(n) :( */
-static void sleepCallback(OS_TCB_t *task, uint32_t const wakeupTime) {
+static void sleepCallback(OS_TCB_t * const task, uint32_t const wakeupTime) {
 	removeFromRunnable(task);
 	
 	OS_TCB_t *prevInList = sleeping_tasks_head;
@@ -129,7 +134,7 @@ static void wakeupTasks() {
 	}
 }
 
-static void removeFromRunnable(OS_TCB_t *task) {
+static void removeFromRunnable(OS_TCB_t * const task) {
 	if (runnable_head[task->priority] == task) {
 		runnable_head[task->priority] = task->next;
 	}

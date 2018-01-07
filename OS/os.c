@@ -134,12 +134,14 @@ void _svc_OS_task_exit(void) {
 }
 
 void _svc_OS_wait(_OS_SVC_StackFrame_t const * const stack) {
-	_scheduler->wait_callback((void*)stack->r0, stack->r1);
+	_scheduler->wait_callback(OS_currentTCB(), stack->r0);
 }
 
+/* Notifies a waiting task and invokes scheduler. */
 void _svc_OS_notify(_OS_SVC_StackFrame_t const * const stack) {
 		_scheduler->notify_callback((void*)stack->r0);
 		_checkCode++;
+		SCB->ICSR = SCB_ICSR_PENDSVSET_Msk;
 }
 
 /* Run Callback and set pendsv */

@@ -7,6 +7,7 @@
 static OS_mutex_t mutex;
 
 void task1(void const *const args) {
+	OS_mutex_aquire(&mutex);
 	for (int i=0; i < 10; i++)  {
 		printf("Message from Task 1a\r\n");
 	}
@@ -14,16 +15,21 @@ void task1(void const *const args) {
 	for (int i=0; i < 10; i++)  {
 		printf("Message from Task 1b\r\n");
 	}
+	OS_mutex_release(&mutex);
 }
 void task2(void const *const args) {
 	for (int i=0; i < 10; i++) {
+		OS_mutex_aquire(&mutex);
 		printf("Message from Task 2\r\n");
+		OS_mutex_release(&mutex);
 	}
 }
 
 void task3(void const *const args) {
 	for (int i=0; i < 10; i++) {
+		OS_mutex_aquire(&mutex);
 		printf("Message from Task 3\r\n");
+		OS_mutex_release(&mutex);
 	}
 }
 
