@@ -96,18 +96,21 @@ after_stacking_fpu
     LDR     r3, [r0]
 	; Unstack the value of EXC_RETURN 
 	LDMFD r3!, {r1, r12}
+	ORR lr, #0x10 ; Assume the FPU wont be used and set EXC_RETURN[4] high.
 	; Check if FPU was in use by this new task
 	CMP r12, #0
 	BNE after_popping_fpu
-	; Set EXC_RETURN[4] to reflect whether the FPU is in use in this new context.
-	BIC lr, lr, r12
-	ORR lr, lr, r12
-	; FPU was in use, pop the fpu registers
+	; FPU was in use, pop the fpu registers & Reset the EXC_RETURN Bit
+	BIC lr, #0x10
 	VLDMFD r3!, {s15-s31}
 after_popping_fpu
+	; Set EXC_RETURN[4] to reflect whether the FPU is in use in this new context.
+	
+
     ; Unstack process registers
     LDMFD   r3!, {r4-r11}
     MSR     PSP, r3
+	ISB
 
 	; Update _currentTCB
     STR     r0, [r2]
