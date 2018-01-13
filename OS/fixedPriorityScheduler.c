@@ -22,8 +22,8 @@ static void wakeupTasks(void);
 */
 static OS_TCB_t *runnable_tail[FIXED_PRIORITY_LOWEST+1] = {NULL};
 static OS_TCB_t *runnable_head[FIXED_PRIORITY_LOWEST+1] = {NULL};
-static OS_TCB_t *sleeping_tasks_head = NULL; // A singly linked list, sorted by wakeup time. TODO: Consider using beap
-
+//static OS_TCB_t *sleeping_tasks_head = NULL; // A singly linked list, sorted by wakeup time. TODO: Consider using beap
+static OS_TaskList_t sleeping_tasks;
 
 OS_Scheduler_t const fixedPriorityScheduler = {
 	.preemptive = 1,
@@ -37,7 +37,7 @@ OS_Scheduler_t const fixedPriorityScheduler = {
 };
 
 static void init() {
-	
+	OS_initialiseList(&sleeping_tasks);
 }
 
 /* 
@@ -92,31 +92,27 @@ static void waitCallback(OS_TCB_t * const task, uint32_t const checkCode) {
 */
 static void notifyCallback(OS_TCB_t * const task) {
 	addTask(task);
-	//printf("Task 0x%0x notified", (int)task);
 }
 
 /* Removes the given task from the runnable tasks lists and inserts it into the sleeping tasks list in the appropriate position
 with regard to its wakeup time.  Sorting into this list is O(n) :( */
 static void sleepCallback(OS_TCB_t * const task, uint32_t const wakeupTime) {
 	removeFromRunnable(task);
-	
-	OS_TCB_t *prevInList = sleeping_tasks_head;
-	OS_TCB_t *listPointer = sleeping_tasks_head;
-	while (listPointer != NULL) {
-		if (IS_AFTER(wakeupTime, listPointer->data)) {
+	task->data = wakeupTime;
+
+	OS_TCB_t *prevInList = sleeping_tasks.head;
+	OS_TCB_t *listPointer = sleeping_tasks.head;
+	if (listPointer == NULL || IS_AFTER(wakeupTime, listPointer->data) == 0) {
+		task->next = listPointer;
+		sleeping_tasks.head = task;
+	} else {
+		while (!IS_AFTER(wakeupTime, listPointer->data) && listPointer->next != NULL) {
 			prevInList = listPointer;
 			listPointer = listPointer->next;
 		}
-	}
-	
-	if (sleeping_tasks_head != NULL) {
+		task->next = listPointer->next;
 		prevInList->next = task;
-	} else {
-		sleeping_tasks_head = task;
-	}
-	
-	task->next = listPointer;
-	task->data = wakeupTime;
+	} 
 }
 
 
@@ -124,12 +120,13 @@ static void sleepCallback(OS_TCB_t * const task, uint32_t const wakeupTime) {
 static void wakeupTasks() {
 	// Because the sleeping list is sorted by soonest wakup first, once we reach the first task which isnt ready yet, then we can stop.
 	uint32_t t = OS_elapsedTicks();
-	if (sleeping_tasks_head != NULL) {
-		while (IS_AFTER(OS_elapsedTicks(), sleeping_tasks_head->data)) {
-			sleeping_tasks_head->state &= ~TASK_STATE_SLEEP;
-			addTask(sleeping_tasks_head);
+	if (sleeping_tasks.head != NULL) {
+		while (IS_AFTER(OS_elapsedTicks(), sleeping_tasks.head->data)) {
+			sleeping_tasks.head->state &= ~TASK_STATE_SLEEP;
 			
-			sleeping_tasks_head = sleeping_tasks_head->next; // Move head to the next in the list.
+			OS_TCB_t *readyTask = sleeping_tasks.head;
+			OS_removeFromList(&sleeping_tasks, readyTask);
+			addTask(readyTask);
 		}
 	}
 }
@@ -150,4 +147,6 @@ static void removeFromRunnable(OS_TCB_t * const task) {
 	if (runnable_tail[task->priority] == task) {
 		runnable_tail[task->priority] = task->prev;
 	}
+	task->next = NULL;
+	task->prev = NULL;
 }

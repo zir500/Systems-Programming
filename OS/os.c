@@ -147,7 +147,7 @@ void _svc_OS_notify(_OS_SVC_StackFrame_t const * const stack) {
 
 /* Run Callback and set pendsv */
 void _svc_OS_sleep(_OS_SVC_StackFrame_t const * const stack) {
-	_scheduler->sleep_callback(_currentTCB, stack->r0);
+	_scheduler->sleep_callback(_currentTCB, stack->r0 + _ticks);
 	SCB->ICSR = SCB_ICSR_PENDSVSET_Msk;
 }
 

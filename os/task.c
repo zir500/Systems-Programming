@@ -55,4 +55,6 @@ void OS_removeFromList(OS_TaskList_t * const list, OS_TCB_t * const task) {
 	if (list->tail == task) {
 		list->tail = task->prev;
 	}
+	task->next = NULL;
+	task->prev = NULL;
 }

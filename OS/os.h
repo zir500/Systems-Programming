@@ -77,7 +77,7 @@ void __svc(OS_SVC_WAIT) OS_wait(uint32_t const checkCode);
 
 void __svc(OS_SVC_NOTIFY) OS_notify(OS_TCB_t * const task);
 
-void __svc(OS_SVC_SLEEP) OS_sleep(uint32_t wakeupTime);
+void __svc(OS_SVC_SLEEP) OS_sleep(uint32_t sleepTime);
 
 /************************/
 /* Scheduling functions */
