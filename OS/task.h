@@ -9,6 +9,8 @@
 	 automatically by the CPU on entry to handler mode.  Registers r4-r11 are subsequently
 	 stacked by the task switcher.  That's why the order is a bit weird. */
 typedef struct s_StackFrame {
+	volatile uint32_t spacer;		 
+	volatile uint32_t isFpuNotInUse; //  When context switch occurs, this is 0 if the FPU Wasn't in use 
 	volatile uint32_t r4;
 	volatile uint32_t r5;
 	volatile uint32_t r6;
@@ -26,6 +28,65 @@ typedef struct s_StackFrame {
 	volatile uint32_t pc;
 	volatile uint32_t psr;
 } OS_StackFrame_t;
+
+typedef struct s_FloatingPointStackFrame {
+	volatile uint32_t isFpuNotInUse;
+	volatile uint32_t EXC_RETURN;
+	//Callee Stacked FPU Registers
+	volatile uint32_t s15;
+	volatile uint32_t s16;
+	volatile uint32_t s17;
+	volatile uint32_t s18;
+	volatile uint32_t s19;
+	volatile uint32_t s20;
+	volatile uint32_t s21;
+	volatile uint32_t s22;
+	volatile uint32_t s23;
+	volatile uint32_t s24;
+	volatile uint32_t s25;
+	volatile uint32_t s26;
+	volatile uint32_t s27;
+	volatile uint32_t s28;
+	volatile uint32_t s29;
+	volatile uint32_t s30;
+	volatile uint32_t s31;
+	//Callee Stacked CPU Registers
+	volatile uint32_t r4;
+	volatile uint32_t r5;
+	volatile uint32_t r6;
+	volatile uint32_t r7;
+	volatile uint32_t r8;
+	volatile uint32_t r9;
+	volatile uint32_t r10;
+	volatile uint32_t r11;
+	// Caller Stacked CPU Registers
+	volatile uint32_t r0;
+	volatile uint32_t r1;
+	volatile uint32_t r2;
+	volatile uint32_t r3;
+	volatile uint32_t r12;
+	volatile uint32_t lr;
+	volatile uint32_t pc;
+	volatile uint32_t psr;
+	// Caller Stacked FPU Registers
+	volatile uint32_t 	s0;
+	volatile uint32_t 	s1;
+	volatile uint32_t 	s2;
+	volatile uint32_t 	s3;
+	volatile uint32_t 	s4;
+	volatile uint32_t 	s5;
+	volatile uint32_t 	s6;
+	volatile uint32_t 	s7;
+	volatile uint32_t 	s8;
+	volatile uint32_t 	s9;
+	volatile uint32_t 	s10;
+	volatile uint32_t 	s11;
+	volatile uint32_t 	s12;
+	volatile uint32_t 	s13;
+	volatile uint32_t 	s14;
+	volatile uint32_t  FPSCR;
+	volatile uint32_t spacer;
+} FloatingPointStackFrame_t;
 
 typedef struct OS_TCB {
 	/* Task stack pointer.  It's important that this is the first entry in the structure,

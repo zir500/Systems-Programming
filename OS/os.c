@@ -79,7 +79,7 @@ void OS_initialiseTCB(OS_TCB_t * TCB,
 	uint32_t const priority, 
 	void const * const data) {
 			
-	TCB->sp = stack - (sizeof(OS_StackFrame_t) / sizeof(uint32_t));
+	TCB->sp = stack - (sizeof(OS_StackFrame_t) / sizeof(uint32_t)); // Stack pointer now points to a location one stackframe down from the top of the stack memory block.  
 	TCB->priority = priority;
 	TCB->state = TCB->data = 0;
 	TCB->next = TCB->prev = NULL;
@@ -92,6 +92,7 @@ void OS_initialiseTCB(OS_TCB_t * TCB,
 	sf->pc = (uint32_t)(func);
 	sf->r0 = (uint32_t)(data);
 	sf->psr = 0x01000000;  /* Sets the thumb bit to avoid a big steaming fault */
+	sf->isFpuNotInUse = 0x00000010; /* The FPU isnt in use the first time the task is run */
 }
 
 /* Function that's called by a task when it ends (the address of this function is

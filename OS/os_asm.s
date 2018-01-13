@@ -56,6 +56,7 @@ SVC_tableEnd
 
     ALIGN
 PendSV_Handler
+	; Call the scheduler.
     STMFD   sp!, {r4, lr} ; r4 included for stack alignment
     LDR     r0, =_OS_scheduler
     BLX     r0
@@ -71,14 +72,44 @@ _task_switch
     ; If not, stack remaining process registers (pc, PSR, lr, r0-r3, r12 already stacked)
     MRS     r3, PSP
     STMFD   r3!, {r4-r11}
-    ; Store stack pointer
+	; Fetch the FPCA bit from the control register.
+	; r0 - &NewTCB
+	; r1 - &_currentTCB
+	; r2 - &&_currentTCB
+	; r3 - OldTCB's stack Pointer
+	; r12 - The Contents of the CONTROL Register af the end of OLD Task
+	
+	; Check whether the previous context was using the FPU by checking bit 4 of lr 
+	; (Which was populated with EXC_RETURN on entry to this handler) 0 means the FPU was in use in the previous context
+	ANDS r12, lr, #0x00000010
+	BNE after_stacking_fpu
+	;  The FPU bit was 0 so the FPU was in use.  Stack the remaining FPU Context (s15-s31)
+	VSTMFD r3!, {s15-s31} ; Also will trigger lazy stacking to actually stack s0-s14, fpscr
+after_stacking_fpu
+	; Stack the value of EXC_RETURN so that we can work out whether a task uses the FPU when we switch back to it later.
+	STMFD r3!, {r1, r12} ; r12 for alignment and convinience
+    ; Store the stack pointer in the TCB
     STR     r3, [r1]
+	
+	
     ; Load new stack pointer
     LDR     r3, [r0]
+	; Unstack the value of EXC_RETURN 
+	LDMFD r3!, {r1, r12}
+	; Check if FPU was in use by this new task
+	CMP r12, #0
+	BNE after_popping_fpu
+	; Set EXC_RETURN[4] to reflect whether the FPU is in use in this new context.
+	BIC lr, lr, r12
+	ORR lr, lr, r12
+	; FPU was in use, pop the fpu registers
+	VLDMFD r3!, {s15-s31}
+after_popping_fpu
     ; Unstack process registers
     LDMFD   r3!, {r4-r11}
     MSR     PSP, r3
-    ; Update _currentTCB
+
+	; Update _currentTCB
     STR     r0, [r2]
     ; Clear exclusive access flag
     CLREX
@@ -97,7 +128,7 @@ _task_init_switch
     LDR     r2, =_currentTCB
     STR     r0, [r2]
     ; Switch to using PSP instead of MSP for thread mode (bit 1 = 1)
-    ; Also lose privileges in thread mode (bit 0 = 1) and disable FPU (bit 2 = 0)
+    ; Also lose privileges in thread mode (bit 0 = 1) and disable FPU (In this context) (bit 2 = 0)
     MOV     r2, #3
     MSR     CONTROL, r2
     ; Instruction barrier (stack pointer switch)
