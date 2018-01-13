@@ -27,8 +27,6 @@ void OS_mutex_aquire(OS_mutex_t * const mutex){
 			return;
 		} else {
 			// Someone else holds the mutex, wait for it.
-			// Add this task to the waiting queue and sort it.
-			// Make this task wait.
 			OS_addToListByPriority(&mutex->waitingTasks, OS_currentTCB()); 
 			OS_wait(checkCode);
 		}
@@ -47,7 +45,7 @@ void OS_mutex_release(OS_mutex_t * const mutex){
 				/* What if a context switch happens here?, the true heir to this mutex has been removed, 
 				the mutex has no owner, someone else could sneak in and claim it.  
 				Eventually the task which was releasing this mutex will be run again, 
-				Then the true heir will wake up, realise the mutex isnt avaliable and go back to sleep. */
+				Then the true heir will wake up, realise the mutex isnt avaliable and go back to sleep... I'm ok with this.*/
 				OS_notify(nextTask); 
 			}
 		}
