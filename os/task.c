@@ -22,20 +22,17 @@ void OS_appendToList(OS_TaskList_t * const list, OS_TCB_t * const task) {
 void OS_addToListByPriority(OS_TaskList_t * const list, OS_TCB_t * const task) {
 	OS_TCB_t *prevInList = list->head;
 	OS_TCB_t *listPointer = list->head;
-	while (listPointer != NULL) {
-		if (listPointer->priority <= task->priority) {
+	if (listPointer == NULL || listPointer->priority <= task->priority) {
+		task->next = listPointer;
+		list->head = task;
+	} else {
+		while ((listPointer->priority <= task->priority) && (listPointer->next != NULL)) {
 			prevInList = listPointer;
 			listPointer = listPointer->next;
 		}
-	}
-	
-	if (list->head != NULL) {
+		task->next = listPointer->next;
 		prevInList->next = task;
-	} else {
-		list->head = task;
-	}
-	
-	task->next = listPointer;
+	} 
 }
 
 
