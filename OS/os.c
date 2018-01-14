@@ -44,7 +44,6 @@ void SysTick_Handler(void) {
 
 /* SVC handler for OS_yield().  Sets the TASK_STATE_YIELD flag and schedules PendSV */
 void _svc_OS_yield(void) {
-	_currentTCB->state |= TASK_STATE_YIELD;
 	SCB->ICSR = SCB_ICSR_PENDSVSET_Msk;
 }
 
@@ -81,7 +80,7 @@ void OS_initialiseTCB(OS_TCB_t * TCB,
 			
 	TCB->sp = stack - (sizeof(OS_StackFrame_t) / sizeof(uint32_t)); // Stack pointer now points to a location one stackframe down from the top of the stack memory block.  
 	TCB->priority = priority;
-	TCB->state = TCB->data = 0;
+	TCB->wakeupTime = 0;
 	TCB->next = TCB->prev = NULL;
 	OS_StackFrame_t *sf = (OS_StackFrame_t *)(TCB->sp);
 	memset(sf, 0, sizeof(OS_StackFrame_t));

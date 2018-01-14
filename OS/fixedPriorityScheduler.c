@@ -20,9 +20,10 @@ static void wakeupTasks(void);
  * FIXED_PRIORITY_LOWEST is always the last priority in the enumeration and as such will have the highest value
  * The value will be = number of items in the enumaration - 1
 */
-static OS_TCB_t *runnable_tail[FIXED_PRIORITY_LOWEST+1] = {NULL};
-static OS_TCB_t *runnable_head[FIXED_PRIORITY_LOWEST+1] = {NULL};
+//static OS_TCB_t *runnable_tail[FIXED_PRIORITY_LOWEST+1] = {NULL};
+//static OS_TCB_t *runnable_head[FIXED_PRIORITY_LOWEST+1] = {NULL};
 //static OS_TCB_t *sleeping_tasks_head = NULL; // A singly linked list, sorted by wakeup time. TODO: Consider using beap
+static OS_TaskList_t runnable_tasks[FIXED_PRIORITY_LOWEST+1];
 static OS_TaskList_t sleeping_tasks;
 
 OS_Scheduler_t const fixedPriorityScheduler = {
@@ -37,6 +38,9 @@ OS_Scheduler_t const fixedPriorityScheduler = {
 };
 
 static void init() {
+	for (int i=0; i <= FIXED_PRIORITY_LOWEST; i++){
+		OS_initialiseList(&(runnable_tasks[i]));
+	}
 	OS_initialiseList(&sleeping_tasks);
 }
 
@@ -47,8 +51,8 @@ static void init() {
 static OS_TCB_t const * scheduler() {
 	wakeupTasks();
 	for (int i=0; i <= FIXED_PRIORITY_LOWEST; i++) {
-		if (runnable_head[i] != NULL){
-			return runnable_head[i];
+		if (runnable_tasks[i].head != NULL){
+			return runnable_tasks[i].head;
 		}
 	}
 
@@ -60,16 +64,17 @@ static OS_TCB_t const * scheduler() {
 */
 static void addTask(OS_TCB_t * const newTask) {
 	uint32_t taskPriority = newTask->priority;
-	if (runnable_tail[taskPriority] != NULL) {
-		runnable_tail[taskPriority]->next = newTask;
-		newTask->prev = runnable_tail[taskPriority];
-		runnable_tail[taskPriority] = newTask;
-	} else {
-		runnable_head[taskPriority] = newTask;
-		runnable_tail[taskPriority] = newTask;
-		newTask->prev = NULL;
-		newTask->next = NULL;
-	}
+	OS_appendToList(&(runnable_tasks[taskPriority]), newTask);
+//	if (runnable_tail[taskPriority] != NULL) {
+//		runnable_tail[taskPriority]->next = newTask;
+//		newTask->prev = runnable_tail[taskPriority];
+//		runnable_tail[taskPriority] = newTask;
+//	} else {
+//		runnable_head[taskPriority] = newTask;
+//		runnable_tail[taskPriority] = newTask;
+//		newTask->prev = NULL;
+//		newTask->next = NULL;
+//	}
 }
 
 /* A callback used to indicate that a particular task has finished */
@@ -98,15 +103,15 @@ static void notifyCallback(OS_TCB_t * const task) {
 with regard to its wakeup time.  Sorting into this list is O(n) :( */
 static void sleepCallback(OS_TCB_t * const task, uint32_t const wakeupTime) {
 	removeFromRunnable(task);
-	task->data = wakeupTime;
+	task->wakeupTime = wakeupTime;
 
 	OS_TCB_t *prevInList = sleeping_tasks.head;
 	OS_TCB_t *listPointer = sleeping_tasks.head;
-	if (listPointer == NULL || IS_AFTER(wakeupTime, listPointer->data) == 0) {
+	if (listPointer == NULL || IS_AFTER(wakeupTime, listPointer->wakeupTime) == 0) {
 		task->next = listPointer;
 		sleeping_tasks.head = task;
 	} else {
-		while (!IS_AFTER(wakeupTime, listPointer->data) && listPointer->next != NULL) {
+		while (!IS_AFTER(wakeupTime, listPointer->wakeupTime) && listPointer->next != NULL) {
 			prevInList = listPointer;
 			listPointer = listPointer->next;
 		}
@@ -121,8 +126,7 @@ static void wakeupTasks() {
 	// Because the sleeping list is sorted by soonest wakup first, once we reach the first task which isnt ready yet, then we can stop.
 	uint32_t t = OS_elapsedTicks();
 	if (sleeping_tasks.head != NULL) {
-		while (IS_AFTER(OS_elapsedTicks(), sleeping_tasks.head->data)) {
-			sleeping_tasks.head->state &= ~TASK_STATE_SLEEP;
+		while (IS_AFTER(OS_elapsedTicks(), sleeping_tasks.head->wakeupTime)) {
 			
 			OS_TCB_t *readyTask = sleeping_tasks.head;
 			OS_removeFromList(&sleeping_tasks, readyTask);
@@ -132,21 +136,22 @@ static void wakeupTasks() {
 }
 
 static void removeFromRunnable(OS_TCB_t * const task) {
-	if (runnable_head[task->priority] == task) {
-		runnable_head[task->priority] = task->next;
-	}
-	
-	if (task->next != NULL) {
-		task->next->prev = task->prev;
-	}
-	
-	if (task->prev != NULL) {
-		task->prev->next = task->next;
-	}
-	
-	if (runnable_tail[task->priority] == task) {
-		runnable_tail[task->priority] = task->prev;
-	}
-	task->next = NULL;
-	task->prev = NULL;
+	OS_removeFromList(&(runnable_tasks[task->priority]), task);
+//	if (runnable_head[task->priority] == task) {
+//		runnable_head[task->priority] = task->next;
+//	}
+//	
+//	if (task->next != NULL) {
+//		task->next->prev = task->prev;
+//	}
+//	
+//	if (task->prev != NULL) {
+//		task->prev->next = task->next;
+//	}
+//	
+//	if (runnable_tail[task->priority] == task) {
+//		runnable_tail[task->priority] = task->prev;
+//	}
+//	task->next = NULL;
+//	task->prev = NULL;
 }

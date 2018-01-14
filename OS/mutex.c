@@ -28,7 +28,7 @@ void OS_mutex_aquire(OS_mutex_t * const mutex){
 		} else {
 			// Someone else holds the mutex, wait for it.
 			OS_addToListByPriority(&mutex->waitingTasks, OS_currentTCB()); 
-			OS_wait(checkCode);
+			OS_wait(checkCode); // If this fails, then a task would add itself to the list twice
 		}
 	}
 }

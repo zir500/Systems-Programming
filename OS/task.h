@@ -92,32 +92,23 @@ typedef struct OS_TCB {
 	/* Task stack pointer.  It's important that this is the first entry in the structure,
 	   so that a simple double-dereference of a TCB pointer yields a stack pointer. */
 	void * volatile sp;
-	/* This field is intended to describe the state of the thread - whether it's yielding,
-	   runnable, or whatever.  Only one bit of this field is currently defined (see the #define
-	   below), so you can use the remaining 31 bits for anything you like. */
-	uint32_t volatile state;
 	/* The remaining fields are provided for expandability.  None of them have a dedicated
 	   purpose, but their names might imply a use.  Feel free to use these fields for anything
 	   you like. */
 	uint32_t volatile priority;
-	uint32_t volatile data;
+	uint32_t volatile wakeupTime;
 	
-	/* For scheduling POinter to the next in the queue to be executed and to the previous task in the queue*/
-	struct OS_TCB *next; //TODO Volatile Needed?
-	struct OS_TCB *prev;
+	/* For scheduling, Pointer to the next in the queue to be executed and to the previous task in the queue */
+	struct OS_TCB  * volatile next; 
+	struct OS_TCB  * volatile prev;
 } OS_TCB_t;
 
 
 /* Contains the head and tail elements for a linked lisk of TCBs */
 typedef struct {
-	OS_TCB_t *head;
-	OS_TCB_t *tail;
+	OS_TCB_t * volatile head;
+	OS_TCB_t * volatile tail;
 } OS_TaskList_t;
-
-/* Constants that define bits in a thread's 'state' field. */
-#define TASK_STATE_YIELD    (1UL << 0) 
-#define TASK_STATE_SLEEP	(1UL << 1) // Waiting for the current time to exceed the time specified in the TCB's data field.
-#define TASK_STATE_WAITING	(1UL << 2) // Waiting for a notification matching the code in the TCB's data field.
 
 /*  */
 void OS_initialiseList(OS_TaskList_t * const list);

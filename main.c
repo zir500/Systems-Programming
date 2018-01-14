@@ -8,7 +8,7 @@ static OS_mutex_t print_mutex;
 
 float ackermann(float m, float n){
 	OS_mutex_aquire(&print_mutex);
-	printf("A");
+	printf("A(%.2f, %.2f)\r\n", m, n);
 	OS_mutex_release(&print_mutex);
 	OS_sleep(20);
 	if (m == 0.0f) {
@@ -23,15 +23,16 @@ float ackermann(float m, float n){
 void ackermann_sample(void const *const args) {
 	// As an Example of proper management of the stack when using the FPU, 
 	// Calculate some	ackermann function which usesthe fpu (for no good reason really)
+	float* argsf = (float*)args;
 	OS_sleep(20);
-	float val = ackermann(3.0f, 1.0f);
+	float val = ackermann(argsf[0], argsf[1]);
 	OS_mutex_aquire(&print_mutex);
-	printf("A(3, 3) = %.2f \r\n", val);
+	printf("A(%.2f, %.2f) = %.2f \r\n", argsf[0], argsf[1], val);
 	OS_mutex_release(&print_mutex);
 }
 
 void task2(void const *const args) {
-	for (int i=0; i <= 100; i++) {
+	for (int i=0; i <= 10; i++) {
 		OS_mutex_aquire(&print_mutex);
 		printf("Task 2\r\n");
 		OS_mutex_release(&print_mutex);
@@ -60,12 +61,15 @@ int main(void) {
 	/* Reserve memory for two stacks and two TCBs.
 	   Remember that stacks must be 8-byte aligned. */
 	__align(8)
-	static uint32_t stack1[4096] = {6}, stack2[64], stack3[64];
+	static uint32_t stack1[4096] = {6}, stack2[64], stack3[4096];
 	static OS_TCB_t ackermann_sample_task_tcb, task2_tcb, task3_tcb;
 
-	OS_initialiseTCB(&ackermann_sample_task_tcb, stack1+4096, ackermann_sample, FIXED_PRIORITY_HIGHEST, 0);
+	static float arg1[2] = {1.0f, 1.0f};
+	static float arg3[2] = {2.0f, 2.0f};
+	
+	OS_initialiseTCB(&ackermann_sample_task_tcb, stack1+4096, ackermann_sample, FIXED_PRIORITY_HIGHEST, arg1);
 	OS_initialiseTCB(&task2_tcb, stack2+64, task2, FIXED_PRIORITY_NORMAL, 0);
-	OS_initialiseTCB(&task3_tcb, stack3+64, task3, FIXED_PRIORITY_LOWEST, 0);
+	OS_initialiseTCB(&task3_tcb, stack3+4096, ackermann_sample, FIXED_PRIORITY_LOWEST, arg3);
 
 
 	OS_init(&fixedPriorityScheduler);
