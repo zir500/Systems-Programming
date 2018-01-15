@@ -110,7 +110,7 @@ typedef struct {
 	OS_TCB_t * volatile tail;
 } OS_TaskList_t;
 
-/*  */
+/* Initialises a task list */
 void OS_initialiseList(OS_TaskList_t * const list);
 
 /* Adds the given TCB to the end of a list */

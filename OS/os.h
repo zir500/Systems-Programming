@@ -36,7 +36,8 @@ typedef struct {
 /***************************/
 
 /* Initialises the OS.  Must be called before OS_start().  The argument is a pointer to an
-   OS_Scheduler_t structure (see above). */
+ * OS_Scheduler_t structure (see above). 
+*/
 void OS_init(OS_Scheduler_t const * scheduler);
 
 /* Starts the OS kernel.  Never returns. */
@@ -70,7 +71,12 @@ void OS_initialiseTCB(OS_TCB_t * TCB, uint32_t * const stack, void (* const func
 /* SVC delegate to add a task */
 void __svc(OS_SVC_ADD_TASK) OS_addTask(OS_TCB_t const * const);
 
-/* SVC delegate to yield the current task */
+
+
+/************************/
+/* Scheduling functions */
+/************************/
+
 void __svc(OS_SVC_YIELD) OS_yield(void);
 
 uint32_t __svc(OS_SVC_WAIT) OS_wait(uint32_t const checkCode);
@@ -79,14 +85,10 @@ void __svc(OS_SVC_NOTIFY) OS_notify(OS_TCB_t * const task);
 
 void __svc(OS_SVC_SLEEP) OS_sleep(uint32_t sleepTime);
 
-/************************/
-/* Scheduling functions */
-/************************/
+void OS_notifyFromSVC(OS_TCB_t* task);
 
-/*	Returns the current checkcode  */
 uint32_t OS_checkCode(void);
 
-void OS_notifyFromSVC(void * const reason);
 
 
 

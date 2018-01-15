@@ -66,19 +66,13 @@ _task_switch
     ; Load r2 = &_currentTCB (OS_TCB **), r1 = _currentTCB (OS_TCB *, == OS_StackFrame **)
     LDR     r2, =_currentTCB
     LDR     r1, [r2]
+	
     ; Compare _currentTCB to nextTCB: if equal, go home
     CMP     r1, r0
     BXEQ    lr
     ; If not, stack remaining process registers (pc, PSR, lr, r0-r3, r12 already stacked)
     MRS     r3, PSP
     STMFD   r3!, {r4-r11}
-	; Fetch the FPCA bit from the control register.
-	; r0 - &NewTCB
-	; r1 - &_currentTCB
-	; r2 - &&_currentTCB
-	; r3 - OldTCB's stack Pointer
-	; r12 - The Contents of the CONTROL Register af the end of OLD Task
-	
 	; Check whether the previous context was using the FPU by checking bit 4 of lr 
 	; (Which was populated with EXC_RETURN on entry to this handler) 0 means the FPU was in use in the previous context
 	ANDS r12, lr, #0x00000010

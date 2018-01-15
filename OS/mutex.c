@@ -16,17 +16,17 @@ void OS_mutexInit(OS_mutex_t * const mutex){
  * If the mutex is owned by some other task, then the current task will yeild and wait untill the mutex is released.
 */
 void OS_mutexAquire(OS_mutex_t * const mutex){
-	while (1){
+	while (1) {
 		uint32_t const mutex_owner = __LDREXW ((uint32_t*)mutex);
 		uint32_t checkCode = OS_checkCode();
 		
-		if (mutex_owner == 0){
+		if (mutex_owner == 0) {
 			if (__STREXW ((uint32_t)OS_currentTCB(), (uint32_t*)mutex)) {
 				// We have claimed the mutex
 				mutex->counter++;
 				return;
 			}
-		} else if (mutex_owner == (uint32_t)OS_currentTCB()){
+		} else if (mutex_owner == (uint32_t)OS_currentTCB()) {
 			// We already own the mutex
 			mutex->counter++;
 			return;
@@ -45,10 +45,10 @@ void OS_mutexAquire(OS_mutex_t * const mutex){
  * Or just clears to 0 if there are no task waiting.
 */
 void OS_mutexRelease(OS_mutex_t * const mutex){
-	if (mutex->owner == OS_currentTCB()){
+	if (mutex->owner == OS_currentTCB()) {
 		mutex->counter--;
 		if (mutex->counter == 0){
-			if (mutex->waitingTasks.head != NULL){
+			if (mutex->waitingTasks.head != NULL) {
 				OS_TCB_t *nextTask =  mutex->waitingTasks.head;
 				OS_removeFromList(&mutex->waitingTasks, mutex->waitingTasks.head);
 				mutex->owner = nextTask;

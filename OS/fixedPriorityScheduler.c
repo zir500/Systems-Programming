@@ -37,8 +37,9 @@ OS_Scheduler_t const fixedPriorityScheduler = {
 	.sleep_callback = sleepCallback
 };
 
+/* Initialises the lists  */
 static void init() {
-	for (int i=0; i <= FIXED_PRIORITY_LOWEST; i++){
+	for (int i=0; i <= FIXED_PRIORITY_LOWEST; i++) {
 		OS_initialiseList(&(runnable_tasks[i]));
 	}
 	OS_initialiseList(&sleeping_tasks);
@@ -55,7 +56,6 @@ static OS_TCB_t const * scheduler() {
 			return runnable_tasks[i].head;
 		}
 	}
-
 	return OS_idleTCB_p;
 }
 
@@ -120,7 +120,6 @@ static void wakeupTasks() {
 	uint32_t t = OS_elapsedTicks();
 	if (sleeping_tasks.head != NULL) {
 		while (IS_AFTER(OS_elapsedTicks(), sleeping_tasks.head->wakeupTime)) {
-			
 			OS_TCB_t *readyTask = sleeping_tasks.head;
 			OS_removeFromList(&sleeping_tasks, readyTask);
 			addTask(readyTask);

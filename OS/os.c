@@ -6,8 +6,9 @@
 
 __align(8)
 /* Idle task stack frame area and TCB.  The TCB is not declared const, to ensure that it is placed in writable
-   memory by the compiler.  The pointer to the TCB _is_ declared const, as it is visible externally - but it will
-   still be writable by the assembly-language context switch. */
+ * memory by the compiler.  The pointer to the TCB _is_ declared const, as it is visible externally - but it will
+ * still be writable by the assembly-language context switch. 
+*/
 static OS_StackFrame_t const volatile _idleTaskSF;
 static OS_TCB_t OS_idleTCB = { (void *)(&_idleTaskSF + 1), 0, 0, 0 };
 OS_TCB_t const * const OS_idleTCB_p = &OS_idleTCB;
@@ -53,7 +54,8 @@ void _svc_OS_schedule(void) {
 }
 
 /* Sets up the OS by storing a pointer to the structure containing all the callbacks.
-   Also establishes the system tick timer and interrupt if preemption is enabled. */
+ * Also establishes the system tick timer and interrupt if preemption is enabled. 
+*/
 void OS_init(OS_Scheduler_t const * scheduler) {
 	_scheduler = scheduler;
     *((uint32_t volatile *)0xE000ED14) |= (1 << 9); // Set STKALIGN
@@ -126,13 +128,18 @@ OS_TCB_t const * _OS_scheduler() {
 	return _scheduler->scheduler_callback();
 }
 
-/* SVC handler that's called by _OS_task_end when a task finishes.  Invokes the
-   task end callback and then queues PendSV to call the scheduler. */
+/* SVC handler that's called by _OS_task_end when a task finishes.  
+ * Invokes the task end callback and then queues PendSV to call the scheduler. 
+*/
 void _svc_OS_task_exit(void) {
 	_scheduler->taskexit_callback(_currentTCB);
 	SCB->ICSR = SCB_ICSR_PENDSVSET_Msk;
 }
 
+/* SVC handler for OS_wait.  Invokes the wait callback in the scheduler, 
+ * passing in the current TCB and value of check code from the stack.
+ * Returns the success code.
+*/
 void _svc_OS_wait(_OS_SVC_StackFrame_t * const stack) {
 	uint32_t succeeded = _scheduler->wait_callback(OS_currentTCB(), stack->r0);
 	stack->r0 = succeeded;
@@ -151,15 +158,18 @@ void _svc_OS_sleep(_OS_SVC_StackFrame_t const * const stack) {
 	SCB->ICSR = SCB_ICSR_PENDSVSET_Msk;
 }
 
+/* Returns the current calue of the check code */
 uint32_t OS_checkCode(){
 	return _checkCode;
 }
 
-/* 	Allows ISRs to send notify signals.  MUST be called from an ISR. 
-		This function MUST issue __clrex if it changes the checkcode. This is incase
-		it is invoked from an ISR with a higher priority than the SVC handler*/
-void OS_notifyFromSVC(void * const reason){
-	_scheduler->notify_callback(reason);
+/* Allows ISRs to send notify signals.  MUST be called from an ISR. 
+ * This function MUST issue __clrex if it changes the checkcode. This is incase
+ * it is invoked from an ISR with a higher priority than the SVC handler
+*/
+void OS_notifyFromSVC(OS_TCB_t* task){
+	_scheduler->notify_callback(task);
+	SCB->ICSR = SCB_ICSR_PENDSVSET_Msk;
 	_checkCode++;
 	__clrex();
 }
