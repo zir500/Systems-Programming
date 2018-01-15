@@ -27,28 +27,28 @@ int main(void) {
 									mutexDemo2, 
 									FPUDemo1,
 									FPUDemo2,
-									waitDemo,
-									notifyDemo;
+									waitDemoTCB,
+									notifyDemoTCB;
 	
-	OS_initialiseTCB(&mutexDemo1,mutexDemoStack1+4096, Mutex_Demo, FIXED_PRIORITY_HIGH, NULL);
-	OS_initialiseTCB(&mutexDemo2,mutexDemoStack2+4096, Mutex_Demo, FIXED_PRIORITY_HIGH, NULL);
+	OS_initialiseTCB(&mutexDemo1,mutexDemoStack1+4096, mutexDemo, FIXED_PRIORITY_HIGH, NULL);
+	OS_initialiseTCB(&mutexDemo2,mutexDemoStack2+4096, mutexDemo, FIXED_PRIORITY_HIGH, NULL);
 	
-	OS_initialiseTCB(&FPUDemo1,FPUDemoStack1+128, FPU_demo, FIXED_PRIORITY_NORMAL, NULL);
-	OS_initialiseTCB(&FPUDemo2,FPUDemoStack2+128, FPU_demo, FIXED_PRIORITY_NORMAL, NULL);
+	OS_initialiseTCB(&FPUDemo1,FPUDemoStack1+128, FPUDemo, FIXED_PRIORITY_NORMAL, NULL);
+	OS_initialiseTCB(&FPUDemo2,FPUDemoStack2+128, FPUDemo, FIXED_PRIORITY_NORMAL, NULL);
 	
-	OS_initialiseTCB(&waitDemo,		waitDemoStack+128, 	Wait_demo, FIXED_PRIORITY_HIGHEST, NULL);
-	OS_initialiseTCB(&notifyDemo,	nofityDemoStack+128,	Notify_Demo, FIXED_PRIORITY_LOWEST, &waitDemo);
+	OS_initialiseTCB(&waitDemoTCB,		waitDemoStack+128, 	waitDemo, FIXED_PRIORITY_HIGHEST, NULL);
+	OS_initialiseTCB(&notifyDemoTCB,	nofityDemoStack+128,	notifyDemo, FIXED_PRIORITY_LOWEST, &waitDemoTCB);
 
 	OS_init(&fixedPriorityScheduler);
 
-	demos_init();
+	demosInit();
 	
 	OS_addTask(&mutexDemo1);
 	OS_addTask(&mutexDemo2);
 	OS_addTask(&FPUDemo1);
 	OS_addTask(&FPUDemo2);
-	OS_addTask(&waitDemo);
-	OS_addTask(&notifyDemo);
+	OS_addTask(&waitDemoTCB);
+	OS_addTask(&notifyDemoTCB);
 	
 	OS_start();
 }

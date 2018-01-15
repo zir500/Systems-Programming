@@ -5,10 +5,10 @@
 #include "os.h"
 #include "stdio.h"
 
-void Mutex_Demo(void const *const args);
-void FPU_demo(void const *const args);
-void Wait_demo(void const *const args);
-void Notify_Demo(void const *const args);
-void demos_init(void);
+void mutexDemo(void const *const args);
+void FPUDemo(void const *const args);
+void waitDemo(void const *const args);
+void notifyDemo(void const *const args);
+void demosInit(void);
 
 #endif // _DEMOS_H_
