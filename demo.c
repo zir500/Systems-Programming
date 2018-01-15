@@ -5,9 +5,9 @@ static OS_mutex_t ackermann_mutex;
 
 /* Prints a string to the terminal (Just a convinience function) */
 void prints(char * const str){
-	OS_mutex_aquire(&print_mutex);
+	OS_mutexAquire(&print_mutex);
 	printf("%s", str);
-	OS_mutex_release(&print_mutex);
+	OS_mutexRelease(&print_mutex);
 }
 
 /* This uses teh FPU to calculate an ackermann function.
@@ -15,20 +15,20 @@ void prints(char * const str){
  * (There isn't any reason to prevent other tasks from calling it except to demo the recursive mutex.)
  */
 float ackermann(float m, float n){
-	OS_mutex_aquire(&ackermann_mutex);
+	OS_mutexAquire(&ackermann_mutex);
 	float A_m_n = 0;
 	if (m == 0.0f) {
 		A_m_n = n + 1;
-		OS_mutex_release(&ackermann_mutex);
+		OS_mutexRelease(&ackermann_mutex);
 		return A_m_n;
 	} 
 	if (n == 0.0f) {
 		A_m_n = ackermann(m - 1.0f, 1.0f);
-		OS_mutex_release(&ackermann_mutex);
+		OS_mutexRelease(&ackermann_mutex);
 		return A_m_n;
 	}
 	A_m_n = ackermann(m - 1.0f, ackermann(m, n - 1.0f));
-	OS_mutex_release(&ackermann_mutex);
+	OS_mutexRelease(&ackermann_mutex);
 	return A_m_n;
 }
 
@@ -41,9 +41,9 @@ void Mutex_Demo(void const *const args){
 	float A = ackermann(2.0, 2.0);
 	
 	// Print the value of A(2,2)
-	OS_mutex_aquire(&print_mutex);
+	OS_mutexAquire(&print_mutex);
 	printf("A(2, 2) = %.1f\r\n", A);
-	OS_mutex_release(&print_mutex);
+	OS_mutexRelease(&print_mutex);
 	
 	prints("Mutex Demo Finished\r\n");
 }
@@ -58,16 +58,16 @@ void FPU_demo(void const *const args){
 	float four = 4.0f;
 	float five = 5.0f;
 	float ten_ovr_four = ten/four;
-	OS_mutex_aquire(&print_mutex);
+	OS_mutexAquire(&print_mutex);
 	printf("10/4 = %.2f\r\n", ten_ovr_four);
-	OS_mutex_release(&print_mutex);
+	OS_mutexRelease(&print_mutex);
 	
 	prints("FPU Demo Sleeping\r\n");
 	OS_sleep(10);
 	
-	OS_mutex_aquire(&print_mutex);
+	OS_mutexAquire(&print_mutex);
 	printf("(10/4) * 5 = %.2f\r\n", ten_ovr_four*five);
-	OS_mutex_release(&print_mutex);
+	OS_mutexRelease(&print_mutex);
 }
 
 /* This task demonstrates Wait by waiting as soon as it begins.
@@ -91,6 +91,6 @@ void Notify_Demo(void const *const args){
 
 /* Does any setup required for the demos to run */
 void demos_init(){
-	OS_mutex_init(&print_mutex);
-	OS_mutex_init(&ackermann_mutex);
+	OS_mutexInit(&print_mutex);
+	OS_mutexInit(&ackermann_mutex);
 }

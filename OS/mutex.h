@@ -15,18 +15,18 @@ typedef struct {
 } OS_mutex_t;
 
 /* Initialises the given mutex includeing setting the owner and counter to 0 */
-void OS_mutex_init(OS_mutex_t * const mutex);
+void OS_mutexInit(OS_mutex_t * const mutex);
 
 /* Aquires the given mutex.  Blocking, will wait for the mutex to be availiable
  * before returning. Will wait indefinately if the mutex cannot be aquired.
 */
-void OS_mutex_aquire(OS_mutex_t * const mutex);
+void OS_mutexAquire(OS_mutex_t * const mutex);
 
 /* Releases a claim to the given mutex.  
  * Once the mutex has been released as many times as it was quired by a task, 
  * the owner of the mutex will be reset to 0 
 */
-void OS_mutex_release(OS_mutex_t * const mutex);
+void OS_mutexRelease(OS_mutex_t * const mutex);
 
 
 
