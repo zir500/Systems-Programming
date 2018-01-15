@@ -133,8 +133,9 @@ void _svc_OS_task_exit(void) {
 	SCB->ICSR = SCB_ICSR_PENDSVSET_Msk;
 }
 
-void _svc_OS_wait(_OS_SVC_StackFrame_t const * const stack) {
-	_scheduler->wait_callback(OS_currentTCB(), stack->r0);
+void _svc_OS_wait(_OS_SVC_StackFrame_t * const stack) {
+	uint32_t succeeded = _scheduler->wait_callback(OS_currentTCB(), stack->r0);
+	stack->r0 = succeeded;
 }
 
 /* Notifies a waiting task and invokes scheduler. */

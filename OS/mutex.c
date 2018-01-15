@@ -3,13 +3,18 @@
 #include "stm32f4xx.h"          
 
 
-
+/* Initialises a mutex */
 void OS_mutex_init(OS_mutex_t * const mutex){
 	mutex->counter = 0;
 	mutex->owner = 0;
 	OS_initialiseList(&mutex->waitingTasks);
 }
 
+/* Attempts to aquire the given mutex.  
+ * If the mutex isnt owned, then the ownership passes to thie calling task. 
+ * If the mutex is already owned by this task then it will lay an additional claim to the mutex.
+ * If the mutex is owned by some other task, then the current task will yeild and wait untill the mutex is released.
+*/
 void OS_mutex_aquire(OS_mutex_t * const mutex){
 	while (1){
 		uint32_t const mutex_owner = __LDREXW ((uint32_t*)mutex);
@@ -28,25 +33,28 @@ void OS_mutex_aquire(OS_mutex_t * const mutex){
 		} else {
 			// Someone else holds the mutex, wait for it.
 			OS_addToListByPriority(&mutex->waitingTasks, OS_currentTCB()); 
-			OS_wait(checkCode); // If this fails, then a task would add itself to the list twice
+			if (!OS_wait(checkCode)){ 
+				OS_removeFromList(&mutex->waitingTasks, OS_currentTCB());
+			}
 		}
 	}
 }
 
+/* Decreases the number of claims to this mutex.  
+ * If there are no more claims to this mutex then it passes ownership on to the next task which is waiting.
+ * Or just clears to 0 if there are no task waiting.
+*/
 void OS_mutex_release(OS_mutex_t * const mutex){
 	if (mutex->owner == OS_currentTCB()){
 		mutex->counter--;
 		if (mutex->counter == 0){
-			mutex->owner = 0;
-			// Notify the next in the queue
 			if (mutex->waitingTasks.head != NULL){
 				OS_TCB_t *nextTask =  mutex->waitingTasks.head;
 				OS_removeFromList(&mutex->waitingTasks, mutex->waitingTasks.head);
-				/* What if a context switch happens here?, the true heir to this mutex has been removed, 
-				the mutex has no owner, someone else could sneak in and claim it.  
-				Eventually the task which was releasing this mutex will be run again, 
-				Then the true heir will wake up, realise the mutex isnt avaliable and go back to sleep... I'm ok with this.*/
+				mutex->owner = nextTask;
 				OS_notify(nextTask); 
+			} else {
+				mutex->owner = 0;
 			}
 		}
 	}
