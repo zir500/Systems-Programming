@@ -10,9 +10,8 @@
       <TargetName>STM32F407 Flash</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
-      <pArmCC>5060528::V5.06 update 5 (build 528)::.\ARMCC_5_06_U5</pArmCC>
-      <pCCUsed>5060528::V5.06 update 5 (build 528)::.\ARMCC_5_06_U5</pCCUsed>
-      <uAC6>0</uAC6>
+      <pArmCC>5060422::V5.06 update 4 (build 422)::ARMCC</pArmCC>
+      <pCCUsed>5060422::V5.06 update 4 (build 422)::ARMCC</pCCUsed>
       <TargetOption>
         <TargetCommonOption>
           <Device>STM32F407VGTx</Device>
@@ -400,6 +399,11 @@
               <FileName>main.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\main.c</FilePath>
+            </File>
+            <File>
+              <FileName>demo.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\demo.c</FilePath>
             </File>
           </Files>
         </Group>

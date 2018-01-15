@@ -4,7 +4,7 @@ static OS_mutex_t printMutex;
 static OS_mutex_t ackermannMutex;
 
 /* Prints a string to the terminal (Just a convinience function) */
-void prints(char * const str){
+void prints(char * const str) {
 	OS_mutexAquire(&printMutex);
 	printf("%s", str);
 	OS_mutexRelease(&printMutex);
@@ -14,8 +14,9 @@ void prints(char * const str){
  * It is highly recursive and uses a mutex to prevent any other task from calling this function at the same time
  * (There isn't any reason to prevent other tasks from calling it except to demo the recursive mutex.)
  */
-float ackermann(float m, float n){
+float ackermann(float m, float n) {
 	OS_mutexAquire(&ackermannMutex);
+	OS_sleep(2); // This would give the other ackermann task the opportunity to call this function.
 	float A_m_n = 0;
 	if (m == 0.0f) {
 		A_m_n = n + 1;
@@ -35,7 +36,7 @@ float ackermann(float m, float n){
 /* Uses the above ackerman function to demonstrate the recursive mutex works, 
  * and that prevents other tasks from claiming it. 
 */
-void mutexDemo(void const *const args){
+void mutexDemo(void const *const args) {
 	prints("Starting Mutex Demo\r\n");
 	OS_sleep(2); // Wait for the other mutexDemo to start
 	float A = ackermann(2.0, 2.0);
@@ -53,7 +54,7 @@ void mutexDemo(void const *const args){
 /* This task does a few operations on the FPU, slees for a period of time - allowing a context switch to occur
  * then resumes the calculations from where it left off before it went to sleep
 */
-void FPUDemo(void const *const args){
+void FPUDemo(void const *const args) {
 	float ten = 10.0f;
 	float four = 4.0f;
 	float five = 5.0f;
@@ -73,7 +74,7 @@ void FPUDemo(void const *const args){
 /* This task demonstrates Wait by waiting as soon as it begins.
  * Some other task will notify this task after a period of time.
 */
-void waitDemo(void const *const args){
+void waitDemo(void const *const args) {
 	prints("Wait Demo Running.  Waiting...\r\n");
 	OS_wait(OS_checkCode());
 	prints("Wait demo notified.\r\n");
@@ -82,7 +83,7 @@ void waitDemo(void const *const args){
 /* This task will sleep for approximately a second then will notify the waitDemo
  * The TCB of waitDemo is passed into this task through the arguments.
 */
-void notifyDemo(void const *const args){
+void notifyDemo(void const *const args) {
 	prints("Notify Demo Running.\r\n");
 	OS_sleep(1000);
 	OS_notify((OS_TCB_t*) args);
@@ -90,7 +91,7 @@ void notifyDemo(void const *const args){
 
 
 /* Does any setup required for the demos to run */
-void demosInit(){
+void demosInit() {
 	OS_mutexInit(&printMutex);
 	OS_mutexInit(&ackermannMutex);
 }
